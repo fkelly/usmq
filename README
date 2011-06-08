@@ -1,6 +1,18 @@
-This directory contains source code for a very simple message queueing system.
+INTRODUCTION
 
-The purpose of this mq is just to explore libevent using C.
+This repository contains source code for a very simple message queueing system.
+
+The purpose of this mq is just to explore libevent using C. This code was written for pedagogical purposes and there are loads of issues with it that would prevent it from being used in any kind of production capacity. That being said, my hope is that others exploring libevent may find it useful to examine.
+
+Some known issues:
+* there's no concept of state for messages and since evbuffers can't handle more than 4096 bytes (http://archives.seul.org/libevent/users/Oct-2010/msg00054.html), I would need to address this by introducing state
+* if the client sends ill-formed messages, the behavior can be undefined 
+* error-handling is limited at this point
+* I haven't done any memory-leak testing
+* one of the reasons I wrote this code was to improve my own rudimentary C skills, so the C code likely has problems
+
+
+INSTALLATION
 
 You'll need to install libevent2. The code was compiled using libevent-2.0.10-stable, which you can get here: http://monkey.org/~provos/libevent/.
 
@@ -10,6 +22,10 @@ gcc -o ablinklist.o -c -g -Wall ablinklist.c
 gcc -o ablinklist_imp.o -c -g -Wall ablinklist_imp.c
 gcc -o mq.o -c -g -Wall mq.c
 gcc -o mq mq.o ablinklist.o -levent
+
+
+
+RUNNING THE MQ
 
 To run the message queue:
 
@@ -24,4 +40,4 @@ and levels of verbosity:
 > mq -v
 > mq -vv
 
-
+The file test_mq.py contains a Python client and some testing code.
