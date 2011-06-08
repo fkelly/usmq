@@ -1,3 +1,27 @@
 This directory contains source code for a very simple message queueing system.
 
 The purpose of this mq is just to explore libevent using C.
+
+You'll need to install libevent2. The code was compiled using libevent-2.0.10-stable, which you can get here: http://monkey.org/~provos/libevent/.
+
+You can build the code using SCons (http://www.scons.org/), simply run the "scons" command. If you don't have SCons and don't want to install it, you can compile the code as follows:
+
+gcc -o ablinklist.o -c -g -Wall ablinklist.c
+gcc -o ablinklist_imp.o -c -g -Wall ablinklist_imp.c
+gcc -o mq.o -c -g -Wall mq.c
+gcc -o mq mq.o ablinklist.o -levent
+
+To run the message queue:
+
+> mq 
+
+You can specify the port (by default it's 8788):
+
+> mq -p 9090
+
+and levels of verbosity:
+
+> mq -v
+> mq -vv
+
+
