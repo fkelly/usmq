@@ -1,0 +1,6 @@
+Program("mq", ["mq.c", "ablinklist.c"],LIBS=['event'], CCFLAGS=['-g', '-Wall'])
+Program("linklist_imp",["linklist.c","linklist_imp.c"], LIBS=[], CCFLAGS=['-g', '-Wall'])
+Program("ablinklist_imp",["ablinklist.c","ablinklist_imp.c"], LIBS=[], CCFLAGS=['-g', '-Wall'])
+#Program("echo_server", ["echo_server.c" ],LIBS=['event'], CCFLAGS=['-g', '-Wall'])
+Program("token", ["token.c" ],LIBS=[], CCFLAGS=['-g', '-Wall'])
+Program("fishmarket", ["fishmarket.c","fish.c" ],LIBS=['event'], CCFLAGS=['-g', '-Wall'], CPPPATH=["/usr/local/include/event2/"])

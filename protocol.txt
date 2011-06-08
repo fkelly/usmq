@@ -1,0 +1,19 @@
+The protocol for the mq will be extremely simple:
+
+Message producers will use the following:
+
+    PUT\r\n<head>\r\n<nbytes>\r\n<body>\r\n
+
+which will add the message to the queue.
+
+Message consumers will use the following:
+
+    GET\r\n
+
+which will grab the oldest message on the queue.
+
+Or:
+
+    MATCH\r\n<head>\r\n
+
+which will grab the oldest message on the queue with the given "head" value.
