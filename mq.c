@@ -1,16 +1,23 @@
 /*
-TODO: need to handle messages that are too long, badly formed
-TODO: need proper error-handling
-TODO: test with massive message (>10 MB)
+Ultra Simple Message Queue 
+Copyright (C) 2011  Francis Kelly (francis.kelly@gmail.com)
 
-* expand the protocol to allow for inspecting the message queue
-* need to deal with very large messages
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* Messages have the following form:
 
-// <command name> <key> <flags> <exptime> <bytes> [noreply]\r\n
 put messages:
 
 PUT
@@ -18,6 +25,7 @@ PUT
 <head>
 \r\n
 <bytes>
+\r\n
 <body>
 
 get messages:
@@ -37,11 +45,6 @@ count messages:
 COUNT
 \r\n
 
-MATCH_COUNT
-\r\n
-<head>
-\r\n
-
 */
 #include <event.h>
 #include <sys/types.h>
@@ -56,8 +59,6 @@ MATCH_COUNT
 #include <err.h>
 #include "ablinklist.h"
 #include  <signal.h>
-
-void     ctrlc_handler(int);
 
 void  ctrlc_handler(int sig)
 {
@@ -76,15 +77,23 @@ void  ctrlc_handler(int sig)
 #define RESPONSE_INVALID_REQUEST "\1" 
 #define SERVER_PORT 8788
 int port=SERVER_PORT;
-
-
 int verbose=0;
 
+
+/* The mq_state structure is used to keep track of the
+   message queue itself as well as the event_base structure,
+   both of which need to be passed to the "accept" callback,
+   which fires on a new incoming connection.  
+*/
 struct mq_state {
   struct linkedlist *messagelist;
   struct event_base *base;
 };
 
+/* The client_state structure is passed to the buffer read/write
+   callbacks: it contains references to the client file descriptor,
+   the bufferevent structure, and the message list itself.
+*/
 struct client_state {
   int fd;
   struct bufferevent *buf_ev;
@@ -116,12 +125,19 @@ struct message {
 typedef struct request request;
 typedef struct message message;
 
+/* The printfn_message function is used by the
+   ablinklist library's "walk" function to print out
+   a linkedlist.
+*/
 void printfn_message(char *fmt, void *data)
 {
     message *msg = (message *)data;
     printf(fmt, (char *)(msg->head), (char *)(msg->body));
 }
 
+/* Prints out a linkedlist -- used only for very verbose
+   debugging. 
+*/
 void show_messages(struct linkedlist *ll)
 {
     char *fmt="%s / %s\n";
@@ -136,7 +152,9 @@ int parse_put_message(struct bufferevent *incoming, request *req);
 void debug_printf(const char *fmt, ...);
 
 /* this comparison function is used when for comparing nodes
-   consisting of a head (char *) and a body (char *)
+   consisting of a head (char *) and a body (char *) -- the
+   ablinklist library takes a pointer to a function in
+   it search method to find a given node.
  */
 int compfn_head(void *compare_to, void *data)
 {
@@ -255,6 +273,10 @@ void buffer_read_cb(struct bufferevent *incoming, void *arg)
   debug_printf("------ end -------------\n");
 }
 
+/* The drain_extra function is used to remove excessive bytes that
+   might be included within a badly formed message. 
+   NB: the handling of badly formed messages is still problematic.
+*/
 int drain_extra(struct bufferevent *incoming, char *msgtype)
 {
       int extra_bytes=evbuffer_get_length(incoming->input);
@@ -265,6 +287,12 @@ int drain_extra(struct bufferevent *incoming, char *msgtype)
       return extra_bytes;
 }
 
+/* The parse_request function is the core of the message queue program. It analyzes incoming
+   requests and figures out what kind of request they are (PUT, GET, MATCH, COUNT). In the 
+   case of a PUT or MATCH request, the requests themselves are processed. GETs and COUNTs only
+   require actions on the message queue themselves and are handled by the function calling 
+   parse_request.
+*/
 int parse_request(struct bufferevent *incoming, struct evbuffer *evreturn, request *req)
 {
   // TODO: allow the message to be a maximum number of lines
